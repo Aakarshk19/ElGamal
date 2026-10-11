@@ -254,3 +254,4 @@ Core ElGamal operations are implemented in `crypto/elgamal.py` using:
 - Modular inverse: extended Euclidean algorithm
 
 That is the implementation you should walk through in the viva.
+This project is only for educational purposes and isnt a standard project.
