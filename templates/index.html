@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ElGamal Cryptography Tool</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">EG</div>
+      <div>
+        <h1>ElGamal Cryptography Tool</h1>
+        <p class="subtitle">Secure Message and File Encryption using Public-Key Cryptography</p>
+      </div>
+    </div>
+    
+  </header>
+
+  <main class="layout">
+    <section class="card keys-card">
+      <div class="card-head">
+        <h2>Key Generation</h2>
+        <p>Public-key pair generated with modular exponentiation: <strong>y = g<sup>x</sup> mod p</strong></p>
+      </div>
+      <div class="key-actions">
+        <label class="field inline">
+          <span>Prime size</span>
+          <select id="key-bits">
+            <option value="128">128-bit (faster demo)</option>
+            <option value="256" selected>256-bit (recommended)</option>
+          </select>
+        </label>
+        <button type="button" id="btn-generate" class="btn primary">Generate Keys</button>
+        <button type="button" id="btn-show-calc" class="btn secondary" disabled>Show Calculations</button>
+      </div>
+      <p id="key-status" class="status" hidden></p>
+      <div class="key-grid">
+        <article class="key-box">
+          <h3>Public Key <span class="muted">(p, g, y)</span></h3>
+          <p><strong>p</strong> (prime modulus)</p>
+          <pre id="val-p" class="mono">Not generated yet</pre>
+          <p><strong>g</strong> (generator)</p>
+          <pre id="val-g" class="mono">Not generated yet</pre>
+          <p><strong>y</strong> (public value)</p>
+          <pre id="val-y" class="mono">Not generated yet</pre>
+        </article>
+        <article class="key-box private">
+          <h3>Private Key <span class="muted">x</span></h3>
+          <p>Displayed only because this is an educational demonstration. In production systems the private key is never shown in the UI.</p>
+          <p><strong>x</strong></p>
+          <pre id="val-x" class="mono">Not generated yet</pre>
+        </article>
+      </div>
+    </section>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tab active" data-tab="text" role="tab">Text Encryption</button>
+      <button type="button" class="tab" data-tab="file" role="tab">File Encryption</button>
+    </nav>
+
+    <section id="panel-text" class="card tab-panel">
+      <h2>Text Encryption</h2>
+      <p class="lead">Convert a message to integers, then apply ElGamal: <strong>c<sub>1</sub> = g<sup>k</sup> mod p</strong>, <strong>c<sub>2</sub> = m · y<sup>k</sup> mod p</strong>.</p>
+
+      <label class="field">
+        <span>Enter Message</span>
+        <textarea id="message-input" rows="4" placeholder="Hello World"></textarea>
+      </label>
+      <div class="actions">
+        <button type="button" id="btn-encrypt-text" class="btn primary">Encrypt Message</button>
+      </div>
+
+      <div class="result-block">
+        <h3>Original Message</h3>
+        <pre id="text-original" class="mono empty">—</pre>
+        <h3>Ciphertext <span class="muted">(c<sub>1</sub>, c<sub>2</sub>)</span></h3>
+        <pre id="text-cipher" class="mono empty">—</pre>
+        <div class="actions">
+          <button type="button" id="btn-decrypt-text" class="btn primary" disabled>Decrypt Message</button>
+        </div>
+        <h3>Decrypted Message</h3>
+        <pre id="text-plain" class="mono empty">—</pre>
+        <p id="text-verify" class="verify" hidden></p>
+      </div>
+    </section>
+
+    <section id="panel-file" class="card tab-panel hidden">
+      <h2>File Encryption</h2>
+      <div class="callout">
+        <strong>Hybrid ElGamal File Encryption</strong>
+        <p>
+          ElGamal is not efficient for large files. This tool encrypts the file with AES-128-GCM using a random session key,
+          then encrypts that short session key with ElGamal. Practical systems use the same hybrid idea (public-key wrap + symmetric bulk encryption).
+        </p>
+      </div>
+
+      <div class="file-columns">
+        <article>
+          <h3>1. Hash and encrypt a file</h3>
+          <label class="file-pick">
+            <input type="file" id="file-input" />
+            <span>Choose File</span>
+          </label>
+          <p class="meta"><strong>Selected file:</strong> <span id="file-name">None</span></p>
+          <p class="meta"><strong>File size:</strong> <span id="file-size">—</span></p>
+          <div class="actions">
+            <button type="button" id="btn-hash" class="btn secondary">Calculate SHA-256 Hash</button>
+            <button type="button" id="btn-encrypt-file" class="btn primary">Encrypt File</button>
+          </div>
+          <h3>SHA-256 Hash</h3>
+          <pre id="file-hash" class="mono empty">—</pre>
+          <p class="hint">SHA-256 generates a fixed-length hash representing the contents of the file. Even a small change to the file should result in a different hash.</p>
+          <h3>Encrypted File</h3>
+          <p id="enc-file-status" class="meta">Encrypt a file to enable download.</p>
+          <button type="button" id="btn-download-enc" class="btn secondary" disabled>Download Encrypted File</button>
+        </article>
+
+        <article>
+          <h3>2. Decrypt an encrypted package</h3>
+          <label class="file-pick">
+            <input type="file" id="enc-input" accept=".json,.elgamal,.txt" />
+            <span>Upload Encrypted File</span>
+          </label>
+          <p class="meta"><strong>Package:</strong> <span id="enc-name">None</span></p>
+          <div class="actions">
+            <button type="button" id="btn-decrypt-file" class="btn primary">Decrypt File</button>
+          </div>
+          <h3>Integrity check</h3>
+          <p class="meta"><strong>Original file hash:</strong></p>
+          <pre id="hash-original" class="mono empty">—</pre>
+          <p class="meta"><strong>Decrypted file hash:</strong></p>
+          <pre id="hash-decrypted" class="mono empty">—</pre>
+          <p id="hash-status" class="verify" hidden></p>
+          <h3>Decrypted File</h3>
+          <button type="button" id="btn-download-dec" class="btn secondary" disabled>Download Decrypted File</button>
+        </article>
+      </div>
+    </section>
+
+    <section class="card how-card">
+      <h2>How ElGamal Works</h2>
+      <p class="lead">Beginner-friendly steps used by this tool. Values from your last operation appear in <strong>Show Calculations</strong>.</p>
+      <div class="flow">
+        <article class="step">
+          <span class="n">1</span>
+          <h3>Key Generation</h3>
+          <ol>
+            <li>Select prime <strong>p</strong></li>
+            <li>Select generator <strong>g</strong></li>
+            <li>Select private key <strong>x</strong></li>
+            <li>Calculate <strong>y = g<sup>x</sup> mod p</strong></li>
+            <li>Public key = <strong>(p, g, y)</strong></li>
+          </ol>
+        </article>
+        <article class="step">
+          <span class="n">2</span>
+          <h3>Encryption</h3>
+          <ol>
+            <li>Convert the message to a numerical representation <strong>m</strong></li>
+            <li>Select random ephemeral <strong>k</strong></li>
+            <li>Calculate <strong>c<sub>1</sub> = g<sup>k</sup> mod p</strong></li>
+            <li>Calculate <strong>c<sub>2</sub> = m × y<sup>k</sup> mod p</strong></li>
+            <li>Ciphertext = <strong>(c<sub>1</sub>, c<sub>2</sub>)</strong></li>
+          </ol>
+        </article>
+        <article class="step">
+          <span class="n">3</span>
+          <h3>Decryption</h3>
+          <ol>
+            <li>Shared value <strong>s = c<sub>1</sub><sup>x</sup> mod p</strong></li>
+            <li>Modular inverse <strong>s<sup>−1</sup> mod p</strong></li>
+            <li>Recover <strong>m = c<sub>2</sub> × s<sup>−1</sup> mod p</strong></li>
+            <li>Convert the integer back to the original message</li>
+          </ol>
+        </article>
+        <article class="step">
+          <span class="n">4</span>
+          <h3>Files: Confidentiality + Integrity</h3>
+          <ol>
+            <li><strong>Confidentiality:</strong> hybrid encryption (ElGamal + AES-GCM)</li>
+            <li><strong>Integrity:</strong> SHA-256 of original vs decrypted file</li>
+            <li>Match → file recovered unchanged</li>
+            <li>Mismatch → modified or corrupted data</li>
+          </ol>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Educational implementation for Information and Network Security. Core ElGamal uses modular exponentiation and the extended Euclidean algorithm — not an ElGamal library.</p>
+  </footer>
+
+  <div id="calc-modal" class="modal hidden" role="dialog" aria-labelledby="calc-title">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="calc-title">Show Calculations</h2>
+        <button type="button" id="btn-close-calc" class="icon-btn" aria-label="Close">×</button>
+      </div>
+      <pre id="calc-body" class="mono calc-body">Generate keys or encrypt a message to see the actual integers used.</pre>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
